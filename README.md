@@ -33,7 +33,6 @@
 - [测试例程](#-测试例程)
 - [资源占用](#-资源占用)
 - [设计取舍](#-设计取舍)
-- [已知问题与待办](#-已知问题与待办)
 - [致谢](#-致谢)
 - [许可](#-许可)
 
@@ -345,12 +344,6 @@
 | STM32F1 器件包 | `Keil.STM32F1xx_DFP 2.3.0` | **烧录必需**，编译可不需要 |
 | ST-Link | V2 及以上 | SWD 4 线连接 |
 
-### Keil 图形界面
-
-1. 打开 `balanced_robots/MDK-ARM/balanced_robots.uvprojx`
-2. `Project → Build Target`（F7）
-3. `Flash → Download`（F8）
-
 ### 命令行编译（CI 友好）
 
 ```powershell
@@ -369,18 +362,6 @@ Program Size: Code=24668 RO-data=396 RW-data=948 ZI-data=2212
 
 烧录产物：`balanced_robots/MDK-ARM/balanced_robots/balanced_robots.hex`
 
-### ⚠️ 从 CubeMX 重新生成代码时的注意事项
-
-如果你修改 `.ioc` 并重新生成，请确保这些地方保持正确：
-
-1. **USART1 必须是 `Half_duplex(single_wire_mode)`**，PB6 复用开锁输出（`GPIO_MODE_AF_OD`），波特率 1000000，且生成 `HAL_HalfDuplex_Init()` 而非 `HAL_UART_Init()`；
-2. **TIM1 CH1/CH2/CH3 与 TIM2 CH1/CH3/CH4 必须都是 `PWM Generation`**（不是 Output Compare）；两个定时器的 `Period = 3599`；
-3. **ADC1：Scan = Enable，NbrOfConversion = 3，Rank1/2/3 = IN4/IN5/IN6，SamplingTime = 55.5 cycles**；
-4. **CAN1：Prescaler=4, BS1=10TQ, BS2=5TQ, SJW=1TQ，并勾选 NVIC 的 `CAN1 RX0 interrupts`**；
-5. `TIM4` 不在 CubeMX 里配置（由 `main.c` 的 `ControlTimer_Init()` 动态初始化），**TIM4 是空闲的，别分配给别的用途**；
-6. `Hardware/` 与 `Control/` 两个文件组和头文件搜索路径已写进 `.uvprojx`，重新生成后不会丢（`.uvprojx` 由 CubeMX 管理，若被覆盖请手动加回）。
-
----
 
 ## 🚀 快速上手
 
@@ -491,34 +472,7 @@ L6234 连续输出 4A、峰值 5A，堵转时电流会瞬间冲到极限。只�
 **5. 为什么中断里不做事？**
 1kHz 控制节拍和 CAN 接收都用"中断置标志 + 主循环处理"。因为舵机同步写是**阻塞式 UART 发送**（1Mbps 下约 110µs），放进中断会严重拖长中断响应、影响 I2C 时序。
 
----
 
-## ⚠️ 已知问题与待办
-
-### 尚未上板验证
-
-> **当前状态：代码已完成并通过编译（0 Error / 0 Warning），PCB 尚在打样中，固件尚未在真实硬件上验证。** 上板后我会同步更新实测结果。
-
-### 硬件设计需要注意的地方
-
-| # | 问题 | 说明 |
-|---|---|---|
-| 1 | **复位按键接法需复核** | 网表中 `SW1` 四个引脚与 `NRST` 同在 `+5V` 网络，正确接法应为 `NRST —(SW1)— GND`。若按现有网表打板，按下不复位且存在 +5V 对地短路风险 |
-| 2 | **PA6 复用** | 网表中 `PA6` 同时连接电池分压网络与右电机 `SENSE1`，会导致右电机电流采样与电池电压读数相互干扰。右电机电流建议只用 `SENSE2`（PA5） |
-| 3 | **TJA1050 电平余量** | TJA1050 为 5V 器件，`TXD` 高电平门限为 `0.7×VCC = 3.5V`，而 STM32 推挽输出高电平为 3.3V，处于临界。实测多数情况下可用；若 CAN 通信不稳，建议换 **SN65HVD230**（3.3V 版） |
-| 4 | **电池分压精度** | 分压网络与 BOOT0 上拉支路共用电阻，按下 BOOT0 时电池读数会跳变；分压比建议打板后实测校准 `BAT_ADC_DIV_RATIO` 宏 |
-| 5 | **电流采样缺 RC 滤波** | SENSE 直接进 ADC，20kHz 开关噪声较大，建议在 PA4/PA5 对地各加 1kΩ + 100nF（截止约 1.6kHz） |
-
-### 后续计划
-
-- [ ] 上板实测并把结果（波形、实测参数）补充到 README
-- [ ] CAN 在线调参协议（0x201）：支持运行时修改 PID/低通系数，免去反复烧录
-- [ ] 腿部舵机读回实际位置，做腿部闭环（原版是开环下发目标位置）
-- [ ] 提供配套的 Python 上位机（GUI 遥控器 + 实时曲线）
-- [ ] 把电角度对齐结果存入 Flash，避免每次上电都重新对齐
-- [ ] 支持 ROS 2 节点封装（CAN 转 `sensor_msgs/Imu` + `geometry_msgs/Twist`）
-
----
 
 ## 🙏 致谢
 
