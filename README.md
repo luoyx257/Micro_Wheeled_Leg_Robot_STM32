@@ -162,7 +162,7 @@
 舵机调试板将两条串行线统一为一条信号线，通过时分复用方式完成数据的收发。  
 此外，还需准备三根GH1.25 4PIN双头线缆，建议长度为15厘米，需另行购买。
 <p align="center">
-  <img src="docs/images/Connection.jpg" height="200" alt="渲染"/>
+  <img src="docs/images/Connection.png" height="200" alt="渲染"/>
 </p>
 
 
